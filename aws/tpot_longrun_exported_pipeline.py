@@ -1,11 +1,12 @@
 import numpy as np
 
 from sklearn.ensemble import VotingClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import BernoulliNB
 from sklearn.pipeline import make_pipeline, make_union
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.svm import LinearSVC
-from xgboost import XGBClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
 tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
@@ -14,13 +15,9 @@ training_features, testing_features, training_classes, testing_classes = \
     train_test_split(features, tpot_data['class'], random_state=42)
 
 exported_pipeline = make_pipeline(
-    make_union(
-        FunctionTransformer(lambda X: X),
-        make_union(VotingClassifier([('branch',
-            LinearSVC(C=0.18, dual=False, penalty="l1")
-        )]), FunctionTransformer(lambda X: X))
-    ),
-    XGBClassifier(learning_rate=0.94, max_depth=10, min_child_weight=4, n_estimators=500, subsample=0.93)
+    make_union(VotingClassifier([("est", LogisticRegression(C=0.78, dual=False, penalty="l2"))]), FunctionTransformer(lambda X: X)),
+    make_union(VotingClassifier([("est", DecisionTreeClassifier())]), FunctionTransformer(lambda X: X)),
+    BernoulliNB(alpha=0.2, binarize=0.07, fit_prior=True)
 )
 
 exported_pipeline.fit(training_features, training_classes)
